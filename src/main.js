@@ -21,7 +21,11 @@ let originalFen = START_FEN,
   flipped = false,
   result = null,
   selected = -1,
-  previewPv = null;
+  previewPv = null,
+  selectedSquare = null,
+  legalTargets = [],
+  moveHistory = [],
+  pendingPromotion = null;
 let busy = false,
   runId = 0,
   stopped = false,
@@ -61,6 +65,8 @@ function reset() {
   result = null;
   selected = -1;
   previewPv = null;
+  selectedSquare = null;
+  legalTargets = [];
   $("san").textContent = "—";
   $("route").textContent = "Origen y destino";
   $("description").textContent = "Aquí verás qué pieza mover y a qué casilla.";
@@ -84,6 +90,7 @@ function reset() {
   $("eval-fill").style.height = "50%";
   progress(0);
   error("");
+  $("undo").disabled = !moveHistory.length;
 }
 function point(square) {
   const f = square.charCodeAt(0) - 97,
@@ -110,9 +117,18 @@ function drawBoard(fen, move = null) {
       const f = flipped ? 7 - col : col,
         r = flipped ? row + 1 : 8 - row,
         square = String.fromCharCode(97 + f) + r,
-        cell = document.createElement("div");
+        cell = document.createElement("button");
       cell.className = "square" + ((f + r) % 2 ? " dark" : "");
+      cell.type = "button";
       cell.dataset.square = square;
+      cell.setAttribute(
+        "aria-label",
+        `${square}: ${pieces[square] ? names[pieces[square].toLowerCase()] + " " + (pieces[square] === pieces[square].toUpperCase() ? "blanco" : "negro") : "vacía"}`,
+      );
+      cell.setAttribute("aria-pressed", String(selectedSquare === square));
+      if (selectedSquare === square) cell.classList.add("selected-square");
+      if (legalTargets.includes(square)) cell.classList.add("legal-target");
+      cell.draggable = Boolean(pieces[square]);
       if (move && (move.slice(0, 2) === square || move.slice(2, 4) === square))
         cell.classList.add("highlight");
       if (pieces[square]) {
@@ -192,7 +208,10 @@ function drawBoard(fen, move = null) {
 }
 function loadPosition() {
   const board = parsePosition($("fen").value);
-  originalFen = $("fen").value.trim().replace(/\s+/g, " ");
+  const fen = board.fen();
+  if (fen !== originalFen) moveHistory = [];
+  originalFen = fen;
+  $("fen").value = fen;
   reset();
   drawBoard(originalFen);
   $("board-caption").textContent = board.isCheck()
@@ -206,7 +225,10 @@ function renderVariation() {
   pv.forEach((move, index) => {
     const button = document.createElement("button");
     button.className = selected === index ? "selected" : "";
-    button.setAttribute("aria-label", `${move.number}${move.turn === "w" ? "." : "…"} ${move.san}. ${move.description}`);
+    button.setAttribute(
+      "aria-label",
+      `${move.number}${move.turn === "w" ? "." : "…"} ${move.san}. ${move.description}`,
+    );
     button.setAttribute("aria-pressed", String(selected === index));
     const small = document.createElement("small");
     small.textContent = move.number + (move.turn === "w" ? "." : "…");
@@ -265,16 +287,133 @@ function renderResult(value, seconds) {
   $("time-label").textContent =
     Math.min(Math.floor(value.elapsed || 0), seconds) + " / " + seconds + " s";
 }
-$("position-form").onsubmit = async (event) => {
-  event.preventDefault();
-  if (busy) return;
-  let board;
+function cancelCurrentAnalysis() {
+  ++runId;
+  if (busy) {
+    engine.destroy();
+    setBusy(false);
+  }
+}
+function hidePromotion() {
+  $("promotion").hidden = true;
+  pendingPromotion = null;
+}
+function commitMove(from, to, promotion) {
+  const board = parsePosition(currentFen);
+  let move;
   try {
-    board = loadPosition();
-  } catch (e) {
-    error(e.message);
+    move = board.move({ from, to, ...(promotion ? { promotion } : {}) });
+  } catch {
     return;
   }
+  if (!move) return;
+  cancelCurrentAnalysis();
+  moveHistory.push(currentFen);
+  originalFen = board.fen();
+  $("fen").value = originalFen;
+  hidePromotion();
+  reset();
+  drawBoard(originalFen, from + to);
+  $("board-caption").textContent = "Has jugado " + move.san;
+  $("move-hint").textContent =
+    "Posición después de " + move.san + ". Calculando la mejor respuesta…";
+  $("announcement").textContent =
+    "Has jugado " + move.san + ". Nueva posición en análisis.";
+  void analyzeCurrentPosition(board);
+}
+function chooseSquare(square) {
+  if (pendingPromotion) return;
+  const board = parsePosition(currentFen);
+  const piece = board.get(square);
+  if (selectedSquare && legalTargets.includes(square)) {
+    const promotions = board
+      .moves({ square: selectedSquare, verbose: true })
+      .filter((move) => move.to === square && move.promotion);
+    if (promotions.length) {
+      pendingPromotion = { from: selectedSquare, to: square };
+      $("promotion").hidden = false;
+      $("promotion").querySelector("button").focus();
+    } else commitMove(selectedSquare, square);
+    return;
+  }
+  selectedSquare =
+    piece?.color === board.turn() && selectedSquare !== square ? square : null;
+  legalTargets = selectedSquare
+    ? [
+        ...new Set(
+          board
+            .moves({ square: selectedSquare, verbose: true })
+            .map((move) => move.to),
+        ),
+      ]
+    : [];
+  drawBoard(
+    currentFen,
+    selected >= 0 ? previewPv?.[selected]?.uci : result?.move,
+  );
+  if (selectedSquare)
+    $("move-hint").textContent =
+      `Elige una casilla marcada para ${names[piece.type]} en ${square}.`;
+}
+$("board").addEventListener("click", (event) => {
+  const square = event.target.closest(".square")?.dataset.square;
+  if (square) chooseSquare(square);
+});
+$("board").addEventListener("dragstart", (event) => {
+  const square = event.target.closest(".square")?.dataset.square;
+  const board = parsePosition(currentFen);
+  if (!square || board.get(square)?.color !== board.turn()) {
+    event.preventDefault();
+    return;
+  }
+  selectedSquare = square;
+  legalTargets = [
+    ...new Set(board.moves({ square, verbose: true }).map((move) => move.to)),
+  ];
+  $("board")
+    .querySelectorAll(".square")
+    .forEach((cell) => {
+      cell.classList.toggle("selected-square", cell.dataset.square === square);
+      cell.classList.toggle(
+        "legal-target",
+        legalTargets.includes(cell.dataset.square),
+      );
+    });
+  event.dataTransfer.setData("text/plain", square);
+  event.dataTransfer.effectAllowed = "move";
+});
+$("board").addEventListener("dragover", (event) => {
+  if (event.target.closest(".square")?.classList.contains("legal-target"))
+    event.preventDefault();
+});
+$("board").addEventListener("drop", (event) => {
+  const square = event.target.closest(".square")?.dataset.square;
+  const from = event.dataTransfer.getData("text/plain");
+  if (square && from === selectedSquare && legalTargets.includes(square)) {
+    event.preventDefault();
+    chooseSquare(square);
+  }
+});
+$("promotion")
+  .querySelectorAll("[data-promotion]")
+  .forEach((button) => {
+    button.onclick = () => {
+      if (pendingPromotion)
+        commitMove(
+          pendingPromotion.from,
+          pendingPromotion.to,
+          button.dataset.promotion,
+        );
+    };
+  });
+$("cancel-promotion").onclick = () => {
+  hidePromotion();
+  $("board").querySelector(`[data-square="${selectedSquare}"]`)?.focus();
+};
+$("promotion").addEventListener("keydown", (event) => {
+  if (event.key === "Escape") $("cancel-promotion").click();
+});
+async function analyzeCurrentPosition(board) {
   const terminal = terminalMessage(board);
   if (terminal) {
     $("san").textContent = "Fin";
@@ -326,6 +465,15 @@ $("position-form").onsubmit = async (event) => {
   } finally {
     if (id === runId) setBusy(false);
   }
+}
+$("position-form").onsubmit = async (event) => {
+  event.preventDefault();
+  if (busy) return;
+  try {
+    await analyzeCurrentPosition(loadPosition());
+  } catch (e) {
+    error(e.message);
+  }
 };
 $("stop").onclick = () => {
   stopped = true;
@@ -361,6 +509,20 @@ $("flip").onclick = () => {
   );
 };
 $("original").onclick = () => selectPly(-1);
+$("undo").onclick = () => {
+  const fen = moveHistory.pop();
+  if (!fen) return;
+  cancelCurrentAnalysis();
+  hidePromotion();
+  originalFen = fen;
+  $("fen").value = fen;
+  reset();
+  drawBoard(fen);
+  $("board-caption").textContent = "Jugada deshecha";
+  $("move-hint").textContent =
+    "Posición anterior recuperada. Calculando de nuevo…";
+  void analyzeCurrentPosition(parsePosition(fen));
+};
 $("previous").onclick = () => selectPly(selected - 1);
 $("next").onclick = () => selectPly(selected + 1);
 $("copy-fen").onclick = async () => {
@@ -372,6 +534,7 @@ $("copy-fen").onclick = async () => {
   }
 };
 $("fen").addEventListener("input", () => {
+  moveHistory = [];
   reset();
   drawBoard(originalFen);
   $("board-caption").textContent = "FEN modificado: actualiza el tablero";
@@ -395,7 +558,8 @@ document.querySelectorAll("[name=seconds]").forEach(
     }),
 );
 window.addEventListener("pagehide", () => engine.destroy());
-$("source-link").href = import.meta.env.VITE_REPO_URL || "https://github.com/DaveFURIUS/jugada-clara";
+$("source-link").href =
+  import.meta.env.VITE_REPO_URL || "https://github.com/DaveFURIUS/jugada-clara";
 $("source-link").hidden = false;
 $("fen").value = START_FEN;
 drawBoard(START_FEN);

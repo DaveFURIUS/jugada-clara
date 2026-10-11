@@ -46,8 +46,8 @@
               Encuentra la jugada.<br /><span>Entiende la posición.</span>
             </h1>
             <p>
-              Tu mesa de análisis con Stockfish 19. Pega un FEN y deja que el
-              tablero te lo explique.
+              Tu mesa de análisis con Stockfish 19. Pega un FEN o mueve las
+              piezas y descubre la mejor respuesta en cada posición.
             </p>
           </div>
           <div class="intro-tag">
@@ -73,7 +73,7 @@
                 <div
                   id="board"
                   class="board"
-                  role="img"
+                  role="group"
                   aria-label="Tablero de ajedrez"
                 ></div>
                 <svg
@@ -89,11 +89,36 @@
                 <span aria-hidden="true">↻</span> Girar tablero</button
               ><button id="original" class="text-button" disabled>
                 Posición original</button
+              ><button id="undo" class="text-button" disabled>
+                Deshacer jugada</button
               ><button id="copy-fen" class="text-button">Copiar FEN</button>
             </div>
             <p class="move-hint" id="move-hint">
-              La flecha dorada marcará la jugada recomendada.
+              Pulsa una pieza y después su destino, o arrástrala. La flecha
+              dorada marcará la jugada recomendada.
             </p>
+            <div
+              id="promotion"
+              class="promotion"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="promotion-title"
+              hidden
+            >
+              <div class="promotion-card">
+                <h2 id="promotion-title">Elige la coronación</h2>
+                <p>¿En qué pieza se convierte el peón?</p>
+                <div class="promotion-options">
+                  <button type="button" data-promotion="q">Dama</button>
+                  <button type="button" data-promotion="r">Torre</button>
+                  <button type="button" data-promotion="b">Alfil</button>
+                  <button type="button" data-promotion="n">Caballo</button>
+                </div>
+                <button id="cancel-promotion" type="button" class="text-button">
+                  Cancelar
+                </button>
+              </div>
+            </div>
             <section class="line-section" aria-labelledby="line-title">
               <div class="line-header">
                 <h2 id="line-title">La continuación</h2>
@@ -112,8 +137,8 @@
                 </p>
               </div>
               <p class="small-help">
-                Pulsa una jugada para verla. Es una posible continuación, no una
-                predicción del rival.
+                Pulsa una jugada para verla. Desde esa posición también puedes
+                mover una pieza y explorar tu propia variante.
               </p>
             </section>
           </section>
@@ -283,8 +308,8 @@
               <h3>Lee la jugada y explora</h3>
               <p>
                 La flecha une la casilla de origen con el destino. Debajo
-                encontrarás una posible continuación que puedes recorrer para
-                entender la idea.
+                encontrarás una posible continuación. Mueve piezas en el tablero
+                para analizar otras respuestas.
               </p>
             </div>
           </article>

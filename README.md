@@ -2,7 +2,8 @@
 
 [Abrir la web](https://davefurius.github.io/jugada-clara/)
 
-Analizador de ajedrez en español con Stockfish 19 en el navegador. No necesita servidor de
+Analizador de ajedrez en español con Stockfish 19 en el navegador. Mueve piezas,
+explora variantes y descubre la mejor jugada. No necesita servidor de
 cálculo, cuentas, claves privadas ni Python.
 
 ## Desarrollo
@@ -43,6 +44,9 @@ que el análisis funcione sin servidores externos.
 - Un hilo de ejecución para funcionar en GitHub Pages sin cabeceras especiales.
 - El motor completo utiliza 128 MB de hash; el ligero, 32 MB.
 - Validación del FEN y jugadas con chess.js, explicaciones en español.
+- Tablero interactivo: pulsa o arrastra piezas, consulta destinos legales,
+  elige la promoción y deshaz movimientos. El FEN se actualiza y se analiza
+  cada nueva posición, incluso desde una variante del motor.
 - Las posiciones nunca se envían al alojamiento. No hay analítica ni cookies.
 
 La precisión depende del motor, el tiempo y la potencia del equipo. Un FEN no

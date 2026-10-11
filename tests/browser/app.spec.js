@@ -71,3 +71,60 @@ test("ahogado y metadatos legibles sin analizar", async ({ page }) => {
   await expect(page.locator("#description")).toHaveText(/ahogado/);
   await expect(page.locator("#status")).toHaveText("Partida terminada");
 });
+
+test("mover en el tablero actualiza FEN, analiza y permite deshacer", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await page.locator("#engine-mode").selectOption("lite");
+  await page.locator('input[value="3"]').check();
+  await page.locator('[data-square="e2"]').click();
+  await expect(page.locator('[data-square="e4"]')).toHaveClass(/legal-target/);
+  await page.locator('[data-square="e4"]').click();
+  await expect(page.locator("#fen")).toHaveValue(/4P3.* b KQkq - 0 1$/);
+  await expect(page.locator("#status")).toHaveText("Análisis completo", {
+    timeout: 20000,
+  });
+  await expect(page.locator("#san")).not.toHaveText("—");
+  await page.locator("#undo").click();
+  await expect(page.locator("#fen")).toHaveValue(
+    /PPPPPPPP\/RNBQKBNR w KQkq - 0 1$/,
+  );
+  await expect(page.locator('[data-square="e2"] .piece')).toHaveCount(1);
+});
+
+test("arrastrar y coronar con elección de pieza", async ({ page }) => {
+  await page.goto("./");
+  await page.locator("#engine-mode").selectOption("lite");
+  await page.locator('input[value="3"]').check();
+  await page.locator("#fen").fill("7k/P7/8/8/8/8/8/7K w - - 0 1");
+  await page.locator("#load").click();
+  await page
+    .locator('[data-square="a7"]')
+    .dragTo(page.locator('[data-square="a8"]'));
+  await expect(page.locator("#promotion")).toBeVisible();
+  await page.locator('[data-promotion="n"]').click();
+  await expect(page.locator("#fen")).toHaveValue(/^N6k\/8/);
+  await expect(page.locator("#status")).toHaveText("Partida terminada");
+});
+
+test("analiza una jugada elegida desde la variante del motor", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await page.locator("#engine-mode").selectOption("lite");
+  await page.locator('input[value="3"]').check();
+  await page.locator("#analyze").click();
+  await expect(page.locator("#status")).toHaveText("Análisis completo", {
+    timeout: 20000,
+  });
+  await page.locator("#variation button").first().click();
+  await expect(page.locator("#turn-label")).toHaveText("Juegan negras");
+  await page.locator('[data-square="e7"]').click();
+  await expect(page.locator('[data-square="e5"]')).toHaveClass(/legal-target/);
+  await page.locator('[data-square="e5"]').click();
+  await expect(page.locator("#fen")).toHaveValue(/ w KQkq .* 0 2$/);
+  await expect(page.locator("#status")).toHaveText("Análisis completo", {
+    timeout: 20000,
+  });
+});
