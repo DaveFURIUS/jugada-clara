@@ -1,0 +1,30 @@
+{
+  "name": "jugada-clara",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Analizador de ajedrez en español con Stockfish 19 en el navegador.",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "prepare:engine": "node scripts/prepare-engine.mjs",
+    "build": "npm run prepare:engine && vite build && node scripts/seo.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test tests/core.test.js",
+    "test:e2e": "playwright test",
+    "deploy:pages": "npm test && npm run build && npm run test:e2e && gh-pages -d dist --dotfiles"
+  },
+  "dependencies": {
+    "chess.js": "1.4.0",
+    "stockfish": "19.0.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
+    "@playwright/test": "1.58.2",
+    "gh-pages": "6.3.0",
+    "prettier": "3.6.2",
+    "vite": "7.3.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

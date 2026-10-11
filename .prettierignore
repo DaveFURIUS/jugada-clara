@@ -1,0 +1,10 @@
+node_modules
+dist
+public/engine
+public/pieces
+public/licenses
+.qa
+test-results
+playwright-report
+package-lock.json
+LICENSE
