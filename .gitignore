@@ -1,0 +1,12 @@
+node_modules/
+dist/
+public/engine/
+test-results/
+playwright-report/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+.qa/
+.github/workflows/

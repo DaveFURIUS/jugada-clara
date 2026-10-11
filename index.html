@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Analizador de ajedrez con Stockfish 19 | Jugada Clara</title>
+    <meta
+      name="description"
+      content="Analiza un FEN con Stockfish 19 gratis. Ve la mejor jugada en el tablero, entiende la evaluación y recorre las variantes. Sin registro y en tu navegador."
+    />
+    <meta name="theme-color" content="#203955" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:site_name" content="Jugada Clara" />
+    <meta
+      property="og:title"
+      content="Jugada Clara · Analiza ajedrez con Stockfish 19"
+    />
+    <meta
+      property="og:description"
+      content="Pega un FEN. Encuentra la jugada y entiende cómo continúa la posición. Gratis y sin registro."
+    />
+    <link rel="icon" type="image/svg+xml" href="/jugada-clara/favicon.svg" />
+    <script type="module" crossorigin src="/jugada-clara/assets/index-Cbo2DzkN.js"></script>
+    <link rel="stylesheet" crossorigin href="/jugada-clara/assets/index-B3A17fyH.css">
+  <link rel="canonical" href="https://davefurius.github.io/jugada-clara/"><meta property="og:url" content="https://davefurius.github.io/jugada-clara/"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Jugada Clara","url":"https://davefurius.github.io/jugada-clara/","applicationCategory":"GameApplication","operatingSystem":"Navegador web","inLanguage":"es","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"description":"Analizador de posiciones FEN con Stockfish 19 en el navegador. Sin registro."}</script></head>
+  <body>
+    <a class="skip" href="#analizador">Saltar al analizador</a>
+    <header class="site-header">
+      <a class="brand" href="/jugada-clara/"
+        ><span class="brand-icon" aria-hidden="true">♞</span
+        ><span>Jugada<span class="brand-light">Clara</span></span></a
+      >
+      <nav aria-label="Navegación principal">
+        <a href="#analizador">Analizador</a><a href="#guia">Guía de FEN</a
+        ><a href="#preguntas">Ayuda</a>
+      </nav>
+      <span class="header-note">Gratis. Sin registro.</span>
+    </header>
+    <main>
+      <section id="analizador" class="analyzer" aria-labelledby="page-title">
+        <div class="intro">
+          <div>
+            <h1>
+              Encuentra la jugada.<br /><span>Entiende la posición.</span>
+            </h1>
+            <p>
+              Tu mesa de análisis con Stockfish 19. Pega un FEN y deja que el
+              tablero te lo explique.
+            </p>
+          </div>
+          <div class="intro-tag">
+            <span aria-hidden="true">♜</span>
+            <p>
+              Un motor de ajedrez.<br /><strong>Una jugada más clara.</strong>
+            </p>
+          </div>
+        </div>
+        <div class="workspace">
+          <section class="board-area" aria-label="Tablero y continuación">
+            <div class="board-heading">
+              <span class="turn"
+                ><i id="turn-disc"></i
+                ><strong id="turn-label">Juegan blancas</strong></span
+              ><span id="board-caption">Posición inicial</span>
+            </div>
+            <div class="board-layout">
+              <div class="eval-bar" aria-hidden="true">
+                <div id="eval-fill"></div>
+              </div>
+              <div class="board-shell">
+                <div
+                  id="board"
+                  class="board"
+                  role="img"
+                  aria-label="Tablero de ajedrez"
+                ></div>
+                <svg
+                  id="arrows"
+                  class="arrows"
+                  viewBox="0 0 800 800"
+                  aria-hidden="true"
+                ></svg>
+              </div>
+            </div>
+            <div class="board-tools">
+              <button id="flip" class="text-button">
+                <span aria-hidden="true">↻</span> Girar tablero</button
+              ><button id="original" class="text-button" disabled>
+                Posición original</button
+              ><button id="copy-fen" class="text-button">Copiar FEN</button>
+            </div>
+            <p class="move-hint" id="move-hint">
+              La flecha dorada marcará la jugada recomendada.
+            </p>
+            <section class="line-section" aria-labelledby="line-title">
+              <div class="line-header">
+                <h2 id="line-title">La continuación</h2>
+                <div class="line-controls">
+                  <button id="previous" aria-label="Jugada anterior" disabled>
+                    ‹</button
+                  ><button id="next" aria-label="Jugada siguiente" disabled>
+                    ›
+                  </button>
+                </div>
+              </div>
+              <div id="variation" class="variation">
+                <p>
+                  Analiza una posición para explorar la línea que propone el
+                  motor.
+                </p>
+              </div>
+              <p class="small-help">
+                Pulsa una jugada para verla. Es una posible continuación, no una
+                predicción del rival.
+              </p>
+            </section>
+          </section>
+          <aside class="controls">
+            <form id="position-form" class="input-section">
+              <div class="input-title">
+                <label for="fen">Pega tu posición</label
+                ><button id="example" type="button" class="text-button">
+                  Probar un ejemplo
+                </button>
+              </div>
+              <textarea
+                id="fen"
+                rows="2"
+                spellcheck="false"
+                aria-describedby="fen-help"
+                placeholder="FEN de chess.com, Lichess o cualquier tablero…"
+              ></textarea>
+              <div class="input-footer">
+                <span id="fen-help">FEN completo, con sus seis campos.</span
+                ><button id="load" type="button" class="text-button">
+                  Ver en el tablero
+                </button>
+              </div>
+              <label class="select-label" for="engine-mode">Motor</label
+              ><select id="engine-mode">
+                <option value="full">
+                  Stockfish 19 completo · recomendado
+                </option>
+                <option value="lite">Stockfish 19 ligero · carga rápida</option>
+              </select>
+              <p id="engine-help" class="engine-help">
+                Primera carga: unos 99 MB. Red neuronal completa, un hilo de
+                cálculo.
+              </p>
+              <fieldset>
+                <legend>Tiempo para pensar</legend>
+                <div class="time-options">
+                  <label
+                    ><input type="radio" name="seconds" value="3" /><span
+                      ><b>3 s</b><small>Rápido</small></span
+                    ></label
+                  ><label
+                    ><input
+                      type="radio"
+                      name="seconds"
+                      value="15"
+                      checked
+                    /><span><b>15 s</b><small>Detallado</small></span></label
+                  ><label
+                    ><input type="radio" name="seconds" value="45" /><span
+                      ><b>45 s</b><small>Profundo</small></span
+                    ></label
+                  ><label
+                    ><input type="radio" name="seconds" value="120" /><span
+                      ><b>2 min</b><small>Más cálculo</small></span
+                    ></label
+                  >
+                </div>
+              </fieldset>
+              <button class="analyze-button" id="analyze" type="submit">
+                <span aria-hidden="true">♞</span
+                ><span id="analyze-label">Analizar posición</span>
+              </button>
+              <button id="stop" type="button" class="stop-button" hidden>
+                Detener y conservar el resultado
+              </button>
+              <p id="error" class="error" role="alert" hidden></p>
+            </form>
+            <section class="result-panel" aria-labelledby="result-heading">
+              <div class="result-header">
+                <h2 id="result-heading">La mejor jugada</h2>
+                <span id="status" class="status">Por analizar</span>
+              </div>
+              <div class="best-move">
+                <strong id="san">—</strong
+                ><span id="route">Origen y destino</span>
+              </div>
+              <p id="description">
+                Aquí verás qué pieza mover y a qué casilla.
+              </p>
+              <div class="score-row">
+                <strong id="score">—</strong>
+                <div>
+                  <b id="advantage">Evaluación de la posición</b
+                  ><span>+ favorece a blancas · − favorece a negras</span>
+                </div>
+              </div>
+              <div class="progress-label">
+                <span id="progress-label">Listo cuando tú lo estés</span
+                ><span id="time-label">15 s</span>
+              </div>
+              <div
+                id="progress"
+                class="progress"
+                role="progressbar"
+                aria-label="Progreso del análisis"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+              >
+                <i></i>
+              </div>
+              <dl class="stats">
+                <div>
+                  <dt>Profundidad</dt>
+                  <dd id="depth">—</dd>
+                </div>
+                <div>
+                  <dt>Posiciones</dt>
+                  <dd id="nodes">—</dd>
+                </div>
+                <div>
+                  <dt>Tiempo</dt>
+                  <dd id="elapsed">—</dd>
+                </div>
+              </dl>
+            </section>
+            <p class="analysis-note">
+              El resultado es provisional mientras el motor piensa. Más tiempo
+              ayuda a explorar variantes; ningún análisis finito garantiza una
+              jugada infalible.
+            </p>
+          </aside>
+        </div>
+        <p id="announcement" class="sr-only" aria-live="polite"></p>
+        <div id="toast" class="toast" role="status" hidden></div>
+      </section>
+      <section class="guide" id="guia" aria-labelledby="guide-title">
+        <div class="guide-intro">
+          <span class="guide-icon" aria-hidden="true">♙</span>
+          <h2 id="guide-title">
+            Del FEN al tablero,<br />sin perderte en la notación.
+          </h2>
+          <p>
+            Un FEN guarda una posición de ajedrez en una línea de texto. Incluye
+            dónde están las piezas, quién mueve, los enroques disponibles y los
+            contadores de la partida.
+          </p>
+        </div>
+        <div class="guide-steps">
+          <article>
+            <span>1</span>
+            <div>
+              <h3>Copia la posición</h3>
+              <p>
+                En el tablero de análisis de chess.com o Lichess, busca la
+                opción de compartir o exportar y copia el FEN completo. Pégalo
+                en «Pega tu posición».
+              </p>
+            </div>
+          </article>
+          <article>
+            <span>2</span>
+            <div>
+              <h3>Dale tiempo al motor</h3>
+              <p>
+                Empieza con 15 segundos. Para posiciones tácticas o decisiones
+                difíciles, usa Stockfish completo y aumenta a 45 segundos o 2
+                minutos.
+              </p>
+            </div>
+          </article>
+          <article>
+            <span>3</span>
+            <div>
+              <h3>Lee la jugada y explora</h3>
+              <p>
+                La flecha une la casilla de origen con el destino. Debajo
+                encontrarás una posible continuación que puedes recorrer para
+                entender la idea.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="understand" aria-labelledby="understand-title">
+        <div>
+          <h2 id="understand-title">Qué te está diciendo Stockfish</h2>
+          <p>Los números ayudan más cuando sabes cómo leerlos.</p>
+        </div>
+        <div class="explain-grid">
+          <article>
+            <strong>+1,20</strong>
+            <h3>Ventaja de blancas</h3>
+            <p>
+              Una evaluación positiva favorece a las blancas; una negativa, a
+              las negras. Se expresa en unidades de peón, no como una
+              probabilidad de victoria.
+            </p>
+          </article>
+          <article>
+            <strong>M3</strong>
+            <h3>Una secuencia de mate</h3>
+            <p>
+              El motor ha encontrado mate en tres movimientos para blancas. Si
+              aparece −M3, el mate es para negras. La posición y la defensa
+              legal cuentan.
+            </p>
+          </article>
+          <article>
+            <strong>Nf3</strong>
+            <h3>La notación de la jugada</h3>
+            <p>
+              N es caballo, B alfil, R torre, Q dama y K rey. «+» significa
+              jaque y «#», mate. La explicación en español siempre aparece al
+              lado.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section id="preguntas" class="faq" aria-labelledby="faq-title">
+        <div>
+          <h2 id="faq-title">Antes de tu próximo análisis</h2>
+          <p>Respuestas claras para usar mejor la herramienta.</p>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>
+              ¿Cuál es la diferencia entre el motor completo y el ligero?
+            </summary>
+            <p>
+              Los dos son Stockfish 19. El completo utiliza una red neuronal
+              mayor y es más fuerte; la primera descarga es de unos 99 MB. El
+              ligero descarga unos 2 MB y es útil cuando priorizas la velocidad
+              de carga o tienes pocos datos. Ambos funcionan en un hilo para ser
+              compatibles con los navegadores actuales.
+            </p>
+          </details>
+          <details>
+            <summary>¿Se envían mis posiciones a un servidor?</summary>
+            <p>
+              El FEN y el cálculo se quedan en tu navegador. Se descargan la
+              página y los archivos del motor desde el alojamiento, pero no
+              enviamos posiciones, no usamos analítica y no necesitas una
+              cuenta.
+            </p>
+          </details>
+          <details>
+            <summary>¿Por qué cambia la jugada mientras analiza?</summary>
+            <p>
+              Stockfish va explorando respuestas más profundas y puede encontrar
+              una idea mejor. Espera a «Análisis completo» para tomar la
+              recomendación final de ese cálculo. El tiempo disponible y la
+              potencia de tu dispositivo influyen en la profundidad alcanzada.
+            </p>
+          </details>
+          <details>
+            <summary>¿Un FEN contiene toda la partida?</summary>
+            <p>
+              No. Describe una posición y algunos contadores, pero no el
+              historial completo de movimientos. Por eso, un FEN aislado no
+              permite comprobar todas las tablas por repetición. Esta
+              herramienta analiza ajedrez estándar.
+            </p>
+          </details>
+          <details>
+            <summary>¿Puedo usarla durante una partida en curso?</summary>
+            <p>
+              Úsala para estudiar, revisar partidas terminadas y resolver
+              posiciones. Respeta las reglas de juego limpio de la plataforma o
+              competición donde juegues.
+            </p>
+          </details>
+        </div>
+      </section>
+      <noscript
+        ><p class="error">
+          Activa JavaScript para mostrar el tablero y ejecutar Stockfish. Puedes
+          leer la guía de FEN sin JavaScript.
+        </p></noscript
+      >
+    </main>
+    <footer>
+      <a class="brand footer-brand" href="/jugada-clara/"
+        ><span aria-hidden="true">♞</span> Jugada Clara</a
+      >
+      <p>
+        Una herramienta independiente para estudiar ajedrez.<br />No afiliada a
+        chess.com, Lichess ni al equipo de Stockfish.
+      </p>
+      <div>
+        <a href="/jugada-clara/licenses/stockfish.txt"
+          >Licencias y código del motor</a
+        ><a
+          href="https://github.com/nmrugg/stockfish.js/tree/v19.0.0"
+          rel="noopener noreferrer"
+          target="_blank"
+          >Stockfish.js 19</a
+        ><a id="source-link" hidden>Código de esta web</a>
+      </div>
+    </footer>
+  </body>
+</html>

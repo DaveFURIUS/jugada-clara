@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://davefurius.github.io/jugada-clara/sitemap.xml
