@@ -2,8 +2,7 @@
 
 [Abrir la web](https://davefurius.github.io/jugada-clara/)
 
-Analizador de ajedrez en español con Stockfish 19 en el navegador. Pega un FEN,
-visualiza la jugada recomendada y recorre la variante. No necesita servidor de
+Analizador de ajedrez en español con Stockfish 19 en el navegador. No necesita servidor de
 cálculo, cuentas, claves privadas ni Python.
 
 ## Desarrollo
